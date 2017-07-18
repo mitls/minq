@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ekr/minq"
+	"github.com/mitls/minq-everest"
 	"net"
 	"os"
 	"time"

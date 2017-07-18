@@ -1,8 +1,8 @@
 package minq
 
 import (
+	"fmt"
 	"crypto/cipher"
-	"github.com/bifurcation/mint"
 )
 
 type cryptoState struct {
@@ -14,6 +14,7 @@ const clientPpSecretLabel = "EXPORTER-QUIC client 1-RTT Secret"
 const serverPpSecretLabel = "EXPORTER-QUIC server 1-RTT Secret"
 
 func newCryptoState(t *tlsConn, label string) (*cryptoState, error) {
+/*
 	var st cryptoState
 	var err error
 
@@ -31,4 +32,6 @@ func newCryptoState(t *tlsConn, label string) (*cryptoState, error) {
 	}
 
 	return &st, nil
+*/
+	return nil, fmt.Errorf("NYI")
 }

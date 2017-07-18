@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/ekr/minq"
+	"testing"
+	"github.com/mitls/minq-everest"
 )
 
 func main() {
