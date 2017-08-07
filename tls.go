@@ -27,6 +27,12 @@ type TlsConfig struct {
 	//TODO(adl) transport_parameters, ticket_key, tivcket
 }
 
+func NewTlsConfig(serverName string) TlsConfig {
+	return TlsConfig{
+		serverName,
+	}
+}
+
 type tlsConn struct {
 	conn     *connBuffer
 	tls      *C.quic_state

@@ -660,10 +660,6 @@ func (c *Connection) Input(p []byte) error {
 	}
 
 	typ := hdr.getHeaderType()
-	if !isLongHeader(&hdr) {
-		// TODO(ekr@rtfm.com): We are using this for both types.
-		typ = packetType1RTTProtectedPhase0
-	}
 	logf(logTypeConnection, "Packet header %v, %d", hdr, typ)
 
 	// Process messages from the server that don't set up the connection
@@ -792,6 +788,8 @@ func (c *Connection) processCleartext(hdr *packetHeader, payload []byte) error {
 		payload = payload[n:]
 		nonAck := true
 		switch inner := f.f.(type) {
+		case *paddingFrame:
+			// Skip.
 		case *streamFrame:
 			// If this is duplicate data and if so early abort.
 			if inner.Offset+uint64(len(inner.Data)) <= c.streams[0].readOffset {
@@ -1130,7 +1128,7 @@ func (p *recvdPackets) prepareAckRange(protected bool) []ackRange {
 	ranges := make([]ackRange, 0)
 	for i := len(ps.r) - 1; i >= 0; i-- {
 		pn = uint64(i) + ps.min
-		needs_ack := ps.r[i] && !p.acked2.r[i]
+		needs_ack := ps.r[i] && (i >= (len(p.acked2.r)) || !p.acked2.r[i])
 		if inrange != needs_ack {
 			if inrange {
 				// This is the end of a range.
