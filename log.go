@@ -30,7 +30,7 @@ const (
 
 var (
 	logFunction = log.Printf
-	logAll      = false
+	logAll      = true
 	logSettings = map[string]bool{}
 )
 

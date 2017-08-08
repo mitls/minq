@@ -11,8 +11,8 @@ import (
 // #include <memory.h>
 // #include <unistd.h>
 // #include "mitlsffi.h"
-// #cgo CFLAGS: -I${SRCDIR}/../../../../../mitls-fstar/libs/ffi
-// #cgo LDFLAGS: -L. -lmitls
+// #cgo CFLAGS: -I/var/mitls-fstar/libs/ffi
+// #cgo LDFLAGS: -L/var/mitls-fstar/src/tls -lmitls
 import "C"
 
 type TlsConfig struct {
@@ -29,7 +29,14 @@ type TlsConfig struct {
 
 func NewTlsConfig(serverName string) TlsConfig {
 	return TlsConfig{
-		serverName,
+		sni: serverName,
+		cipher_suites: "TLS_AES_128_GCM_SHA256",
+		signature_algs: "ECDSA+SHA256",
+		named_groups: "X25519",
+		enable_0rtt: true,
+		ca_file: "/etc/ssl/certs/ca-certificates.crt",
+		certificate_file: "/etc/ssl/mitls.org.chain",
+		private_key_file: "/etc/ssl/mitls.org.key",
 	}
 }
 
@@ -42,10 +49,13 @@ type tlsConn struct {
 func newTlsConn(conf TlsConfig, role uint8) *tlsConn {
 	var oqp [1024]C.char
 	var ticket [1020]C.char
+	var session [256]C.char
 
 	t := C.quic_ticket{
-		len: (C.size_t)(0),
+		ticket_len: (C.size_t)(0),
 		ticket: ticket,
+		session_len: (C.size_t)(0),
+		session: session,
 	}
 
 	qtp := C.quic_transport_parameters{
@@ -86,6 +96,8 @@ func newTlsConn(conf TlsConfig, role uint8) *tlsConn {
 
 	cfg := &C.quic_config{
 		is_server: C.int(is_server),
+		supported_versions: nil,
+		supported_versions_len: 0,
 		qp: qtp,
 		cipher_suites: c_cs,
 		signature_algorithms: c_sa,
@@ -104,6 +116,7 @@ func newTlsConn(conf TlsConfig, role uint8) *tlsConn {
 	c := newConnBuffer()
 	var st *C.quic_state
 	var err *C.char
+	C.FFI_mitls_init()
 	ret := int(C.FFI_mitls_quic_create(&st, cfg, &err))
 	if ret == 0 {
 		logf(logTypeTls, "TLS configure failed: %s", C.GoString(err))
@@ -138,6 +151,7 @@ func (c *tlsConn) handshake(input []byte) ([]byte, error) {
 	logf(logTypeTrace, "TLS handshake output = %v", hex.EncodeToString(output))
 
 	switch ret {
+	case C.TLS_server_accept:
 	case C.TLS_would_block:
                 logf(logTypeTls, "TLS would have blocked")
 	case C.TLS_error_local:
@@ -146,6 +160,9 @@ func (c *tlsConn) handshake(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("TLS received an alert %s", C.GoString(err))
 	case C.TLS_client_complete:
 		logf(logTypeTls, "TLS: client complete")
+		c.finished = true
+	case C.TLS_server_complete:
+		logf(logTypeTls, "TLS: server complete")
 		c.finished = true
 	default:
 		return nil, fmt.Errorf("Unhandled TLS return code: %d", ret)
@@ -163,6 +180,6 @@ func (c *tlsConn) computeExporter(label string) ([]byte, error) {
 		return nil, fmt.Errorf("TLS failed to get exporter: %s", C.GoString(err))
 	}
 
-	return nil, fmt.Errorf("NYI")
+	return C.GoBytes(unsafe.Pointer(&s.secret[0]), 32), nil
 }
 

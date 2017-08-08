@@ -1,8 +1,10 @@
 package minq
 
 import (
-	"fmt"
+//	"fmt"
 	"crypto/cipher"
+	"crypto"
+	"github.com/bifurcation/mint"
 )
 
 type cryptoState struct {
@@ -14,7 +16,6 @@ const clientPpSecretLabel = "EXPORTER-QUIC client 1-RTT Secret"
 const serverPpSecretLabel = "EXPORTER-QUIC server 1-RTT Secret"
 
 func newCryptoState(t *tlsConn, label string) (*cryptoState, error) {
-/*
 	var st cryptoState
 	var err error
 
@@ -23,15 +24,14 @@ func newCryptoState(t *tlsConn, label string) (*cryptoState, error) {
 		return nil, err
 	}
 
-	k := mint.HkdfExpandLabel(t.cs.Hash, st.secret, "key", []byte{}, t.cs.KeyLen)
-	iv := mint.HkdfExpandLabel(t.cs.Hash, st.secret, "iv", []byte{}, t.cs.IvLen)
+	k := mint.HkdfExpandLabel(crypto.SHA256, st.secret, "key", []byte{}, 16)
+	iv := mint.HkdfExpandLabel(crypto.SHA256, st.secret, "iv", []byte{}, 12)
 
 	st.aead, err = newWrappedAESGCM(k, iv)
+
 	if err != nil {
 		return nil, err
 	}
 
 	return &st, nil
-*/
-	return nil, fmt.Errorf("NYI")
 }
